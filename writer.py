@@ -30,3 +30,33 @@ def write_node_and_edge_movies(id, title, genres):
 write_nodes_and_edges_movies()
 
 
+def write_nodes_and_edges_ratings():
+    with open("ml-latest-small/ratings.csv", "r", encoding="utf-8") as r:
+        ratings = csv.reader(r)
+        next(ratings)  # Skip the header
+        for rating_row in ratings:
+            user_id = rating_row[0]
+            movie_id = rating_row[1]
+            rating = rating_row[2]
+            timestamp = rating_row[3]
+            write_node_and_edge_ratings(user_id, movie_id, rating, timestamp)
+
+
+def write_node_and_edge_ratings(user_id, movie_id, rating, timestamp):
+    with open("output/users.cypher", "a", encoding="utf-8") as u:
+        u.write(f"MERGE (:User {{id: {user_id}}});\n")
+    with open("output/ratings.cypher", "a", encoding="utf-8") as r:
+        r.write(f"MERGE (:Rating {{rating: {rating}, timestamp: {timestamp}}});\n")
+    with open("output/edges.cypher", "a", encoding="utf-8") as ed:
+        ed.write(
+            f"MATCH (u:User {{id: {user_id}}}), (m:Movie {{id: {movie_id}}}), (r:Rating {{rating: {rating}, timestamp: {timestamp}}})\n"
+        )
+        ed.write(f"MERGE (u)-[:RATED {{timestamp: {timestamp}}}]->(m)\n")
+        ed.write(f"MERGE (m)-[:RATED_BY {{timestamp: {timestamp}}}]->(u)\n")
+        ed.write(f"MERGE (m)-[:HAS_RATING {{timestamp: {timestamp}}}]->(r)\n")
+        ed.write(f"MERGE (u)-[:GAVE_RATING]->(r)\n")
+        ed.write(f"MERGE (r)-[:RATED_BY]->(u);\n")
+
+
+write_nodes_and_edges_ratings()
+
