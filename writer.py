@@ -60,3 +60,33 @@ def write_node_and_edge_ratings(user_id, movie_id, rating, timestamp):
 
 write_nodes_and_edges_ratings()
 
+
+def write_nodes_and_edges_tags():
+    with open("ml-latest-small/tags.csv", "r", encoding="utf-8") as t:
+        tags = csv.reader(t)
+        next(tags)  # Skip the header
+        for tag_row in tags:
+            user_id = tag_row[0]
+            movie_id = tag_row[1]
+            tag = tag_row[2]
+            timestamp = tag_row[3]
+            write_node_and_edge_tags(user_id, movie_id, tag, timestamp)
+
+
+def write_node_and_edge_tags(user_id, movie_id, tag, timestamp):
+    with open("output/tags.cypher", "a", encoding="utf-8") as t:
+        t.write(f'MERGE (:Tag {{name: "{tag}"}});\n')
+    with open("output/users.cypher", "a", encoding="utf-8") as u:
+        u.write(f"MERGE (:User {{id: {user_id}}});\n")
+    with open("output/edges.cypher", "a", encoding="utf-8") as ed:
+        ed.write(
+            f"MATCH (u:User {{id: {user_id}}}), (m:Movie {{id: {movie_id}}}), (t:Tag {{name: {tag}}})\n"
+        )
+        ed.write(f"MERGE (u)-[:TAGGED {{timestamp: {timestamp}}}]->(m)\n")
+        ed.write(f"MERGE (m)-[:TAGGED_BY {{timestamp: {timestamp}}}]->(u)\n")
+        ed.write(f"MERGE (u)-[:APPLIED_TAGG {{timestamp: {timestamp}}}]->(t)\n")
+        ed.write(f"MERGE (t)-[:APPLIED_BY {{timestamp: {timestamp}}}]->(u)\n")
+        ed.write(f"MERGE (m)-[:HAS_TAG {{timestamp: {timestamp}}}]->(t);\n")
+
+
+write_nodes_and_edges_tags()
